@@ -8,7 +8,6 @@ const MIT = 'UCEBb1b_L6zDS3xTUrIALZOw';
 const identifyingDescription = /View the complete course: https:\/\/ocw\.mit\.edu/;
 
 async function run () {
-
   const data = await get('https://content.googleapis.com/youtube/v3/playlists', {
     channelId: MIT,
     maxResults: 50,
