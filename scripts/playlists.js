@@ -1,119 +1,29 @@
-// adapted from https://developers.google.com/youtube/v3/quickstart/nodejs#step_3_set_up_the_sample
+const get = require('./get');
 const fs = require('fs');
-const readline = require('readline');
-const {google} = require('googleapis');
-const OAuth2 = google.auth.OAuth2;
+const path = require('path');
+const { promisify } = require('util');
+const write = promisify(fs.writeFile);
 
-// If modifying these scopes, delete your previously saved credentials
-// at ~/.credentials/youtube-nodejs-quickstart.json
-const SCOPES = ['https://www.googleapis.com/auth/youtube.readonly'];
-const TOKEN_DIR = (process.env.HOME || process.env.HOMEPATH ||
-    process.env.USERPROFILE) + '/.credentials/';
-const TOKEN_PATH = TOKEN_DIR + 'youtube-nodejs-quickstart.json';
+const MIT = 'UCEBb1b_L6zDS3xTUrIALZOw';
+const identifyingDescription = /View the complete course: https:\/\/ocw\.mit\.edu/;
 
-// Load client secrets from a local file.
-fs.readFile('client_secret.json', function processClientSecrets(err, content) {
-  if (err) {
-    console.log('Error loading client secret file: ' + err);
-    return;
-  }
-  // Authorize a client with the loaded credentials, then call the YouTube API.
-  authorize(JSON.parse(content), getPlaylists);
-});
+async function run () {
 
-/**
- * Create an OAuth2 client with the given credentials, and then execute the
- * given callback function.
- *
- * @param {Object} credentials The authorization client credentials.
- * @param {function} callback The callback to call with the authorized client.
- */
-function authorize(credentials, callback) {
-  const clientSecret = credentials.installed.client_secret;
-  const clientId = credentials.installed.client_id;
-  const redirectUrl = credentials.installed.redirect_uris[0];
-  const oauth2Client = new OAuth2(clientId, clientSecret, redirectUrl);
-
-  // Check if we have previously stored a token.
-  fs.readFile(TOKEN_PATH, function(err, token) {
-    if (err) {
-      getNewToken(oauth2Client, callback);
-    } else {
-      oauth2Client.credentials = JSON.parse(token);
-      callback(oauth2Client);
-    }
+  const data = await get('https://content.googleapis.com/youtube/v3/playlists', {
+    channelId: MIT,
+    maxResults: 50,
+    part: 'snippet',
   });
+
+  const playlists = data.items.map(item => ({
+    id: item.id,
+    name: item.snippet.title,
+    description: item.snippet.description
+  }));
+
+  const courses = playlists.filter(pl => identifyingDescription.test(pl.description));
+
+  await write(path.join(__dirname, '..', 'data', 'playlists.json'), JSON.stringify(courses));
 }
 
-/**
- * Get and store new token after prompting for user authorization, and then
- * execute the given callback with the authorized OAuth2 client.
- *
- * @param {google.auth.OAuth2} oauth2Client The OAuth2 client to get token for.
- * @param {getEventsCallback} callback The callback to call with the authorized
- *     client.
- */
-function getNewToken(oauth2Client, callback) {
-  const authUrl = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: SCOPES
-  });
-  console.log('Authorize this app by visiting this url: ', authUrl);
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-  rl.question('Enter the code from that page here: ', function(code) {
-    rl.close();
-    oauth2Client.getToken(code, function(err, token) {
-      if (err) {
-        console.log('Error while trying to retrieve access token', err);
-        return;
-      }
-      oauth2Client.credentials = token;
-      storeToken(token);
-      callback(oauth2Client);
-    });
-  });
-}
-
-/**
- * Store token to disk be used in later program executions.
- *
- * @param {Object} token The token to store to disk.
- */
-function storeToken(token) {
-  try {
-    fs.mkdirSync(TOKEN_DIR);
-  } catch (err) {
-    if (err.code != 'EEXIST') {
-      throw err;
-    }
-  }
-  fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
-    if (err) throw err;
-    console.log('Token stored to ' + TOKEN_PATH);
-  });
-}
-
-/**
- * Lists the names and IDs of up to 10 files.
- *
- * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
- */
-function getPlaylists(auth) {
-  const service = google.youtube('v3');
-  service.playlists.list({
-    auth: auth,
-    part: 'snippet,contentDetails,statistics',
-    channelID: 'UCEBb1b_L6zDS3xTUrIALZOw',
-    maxResults: 50
-  }, function(err, response) {
-    if (err) {
-      console.log('The API returned an error: ' + err);
-      return;
-    }
-
-    console.log(response);
-  });
-}
+run();
