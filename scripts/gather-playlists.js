@@ -20,7 +20,15 @@ async function run () {
     description: item.snippet.description
   }));
 
-  const courses = playlists.filter(pl => identifyingDescription.test(pl.description));
+  const courses = playlists
+    .filter(pl => identifyingDescription.test(pl.description))
+    .reduce((cur, acc) => {
+      cur[acc.id] = {
+        name: acc.name,
+        description: acc.description
+      };
+      return cur;
+    }, {});
 
   await write(path.join(__dirname, '..', 'data', 'playlists.json'), JSON.stringify(courses));
 }

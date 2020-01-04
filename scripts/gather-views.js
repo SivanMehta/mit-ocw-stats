@@ -5,8 +5,8 @@ const fs = require('fs');
 const { promisify } = require('util');
 const write = promisify(fs.writeFile);
 
-
-async function gatherViews(id) {
+// the youtube data api already gives us these videos in order
+async function gatherViews(id, idx) {
   const data = await get('https://content.googleapis.com/youtube/v3/videos', {
     id,
     maxResults: 50,
@@ -15,13 +15,14 @@ async function gatherViews(id) {
 
   return {
     id,
+    idx,
     views: data.items[0].statistics.viewCount
   };
 }
 
 async function gatherStats(playlist) {
   const { playlistId, videos } = playlist;
-  const data = await Promise.all(videos.map(v => gatherViews(v)));
+  const data = await Promise.all(videos.map((v, i) => gatherViews(v, i)));
 
   return data.map(video => ({
     videoId: video.id,

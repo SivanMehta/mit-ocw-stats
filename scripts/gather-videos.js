@@ -21,7 +21,8 @@ async function gatherVideos(playlistId) {
 }
 
 async function run() {
-  const data = await Promise.all(playlists.map(pl => gatherVideos(pl.id)));
+  const courses = Object.entries(playlists).map(([key, value]) => key);
+  const data = await Promise.all(courses.map(pl => gatherVideos(pl)));
   await write(path.join(__dirname, '..', 'data', 'videos.json'), JSON.stringify(data));
 }
 
