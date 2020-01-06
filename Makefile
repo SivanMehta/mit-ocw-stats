@@ -12,3 +12,6 @@ data/views.json: data/videos.json
 
 data/final.csv: data/views.json
 	@node scripts/compile-data.js > data/final.csv
+
+plot.png: data/final.csv
+	@Rscript scripts/plot.R
