@@ -27,7 +27,8 @@ async function gatherStats(playlist) {
   return data.map(video => ({
     videoId: video.id,
     playlistId,
-    views: video.views
+    views: video.views,
+    idx: video.idx
   }));
 }
 

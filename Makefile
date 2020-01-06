@@ -9,3 +9,6 @@ data/videos.json: data/playlists.json
 
 data/views.json: data/videos.json
 	@node scripts/gather-views.js
+
+data/final.csv: data/views.json
+	@node scripts/compile-data.js > data/final.csv
